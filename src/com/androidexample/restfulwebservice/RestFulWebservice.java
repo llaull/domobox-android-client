@@ -2,11 +2,13 @@ package com.androidexample.restfulwebservice;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+//import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.io.OutputStream;
+//import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 //import java.io.UnsupportedEncodingException;
 import java.net.URL;
@@ -29,6 +31,8 @@ import android.os.Environment;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.ProgressDialog;
+//import android.graphics.Typeface;
+import android.text.Html;
 /*import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
@@ -117,7 +121,6 @@ public class RestFulWebservice extends Activity {
                 {
                     try
                     {
-         
                         reader.close();
                     }
        
@@ -166,8 +169,45 @@ public class RestFulWebservice extends Activity {
         		}
                 
                 return contenuJson;
-            }        
+            }
         
+        //lecture en local
+        protected String lecteurFichier (String fichierLocal)  {
+        	OutputData += fichierLocal + "\n";
+        	BufferedReader input = null;
+    		try {
+    			
+    			File sdCard = Environment.getExternalStorageDirectory();
+              	File dir = new File (sdCard.getAbsolutePath() + "/json");
+              	 
+              	 
+    			input = new BufferedReader(new InputStreamReader(new FileInputStream(dir + "/"+fichierLocal)));
+    			input.close();
+    			
+    			StringBuffer content = new StringBuffer();
+    			char[] buffer = new char[1024];
+    			int num;
+
+    			while ((num = input.read(buffer)) > 0) {
+    				content.append(buffer, 0, num);
+    			}
+    			
+    			
+
+    		return content.toString();
+    			/*
+    			 * while ((line = input.readLine()) != null) { buffer.append(line +
+    			 * eol); }
+    			 */
+    		} catch (Exception e) {
+    			//Log.e(TAG,"Error while reading ",e);
+    			e.printStackTrace();
+    			OutputData += e.getLocalizedMessage() + "\n";
+    			
+    			return "";
+    		}        	
+        	        
+        }
         @SuppressLint("NewApi")
 		protected void onPostExecute(Void unused) {
             // NOTE: You can call UI Element here.
@@ -185,8 +225,6 @@ public class RestFulWebservice extends Activity {
                 //uiUpdate.setText( Content );
                 
              /****************** Start Parse Response JSON Data *************/
-                
-                
                                       
                 try {
                                             
@@ -194,91 +232,84 @@ public class RestFulWebservice extends Activity {
                      /*******  Returns null otherwise.  *******/
                      
                 	
-                	// faire une fonction avec en param 3 trucs, path, nom fichier, content
-                     JSONArray jsonMainNode = new JSONArray(SauvegardeLocal(Content));
+                	SauvegardeLocal(Content);
+                     JSONArray tableauJson = new JSONArray(lecteurFichier("test.json"));
+                     
+
                      /*********** Process each JSON Node ************/
-                     
-                     /*try {
-                    	 File sdCard = Environment.getExternalStorageDirectory();
-                    	 //File sdCard = Environment.getExternalStoragePublicDirectory(DOWNLOAD_SERVICE);
-                    	 File dir = new File (sdCard.getAbsolutePath() + "/json/");
-                    	 dir.mkdirs();
-                    	 File file = new File(dir, "test.json");
-                    	 OutputData += file.getAbsolutePath() + "\n";
-						OutputStreamWriter wr = new OutputStreamWriter(new FileOutputStream(file));
-						try {
-							wr.write(Content);
-						} catch (IOException e) {
-							// TODO Auto-generated catch block
-							e.printStackTrace();
-							OutputData += e.getLocalizedMessage() + "\n";
-						}
-						wr.flush();
-						wr.close();
-					} catch (FileNotFoundException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-						OutputData += e.getLocalizedMessage() + "\n";
-					} catch (IOException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-						OutputData += e.getLocalizedMessage() + "\n";
-					}*/
-                     
-                      
-                     List<String> emplacement = new ArrayList<String>();
-                     for(int i=0; i < jsonMainNode.length(); i++) 
+                     List<String> emplacements = new ArrayList<String>();
+                     for(int i=0; i < tableauJson.length(); i++) 
                      {
-                         /****** Get Object for each JSON node.***********/
-                         JSONObject c = jsonMainNode.getJSONObject(i);
+                         /****** On fait un object emplacement pour chaque noeud du json.***********/
+                         JSONObject emplacement = tableauJson.getJSONObject(i);
                           
                          /******* Fetch node values **********/
                          
-                         String module_emplacement = c.optString("module_emplacement");
-                         emplacement.add(module_emplacement);
+                         String module_emplacement = emplacement.optString("module_emplacement");
+                         emplacements.add(module_emplacement);
                         
                          //Log.i("JSON parse", song_name);
                     }
                      
+                     //ici on supprime les doublons
                      Set<String> set = new TreeSet<String>();
-                     set.addAll(emplacement);
-                     Object[] tt = set.toArray();
+                     set.addAll(emplacements);
+                     Object[] emplacementsSansDoublon = set.toArray();
                      
                      //boucle qui liste les emplacements
-                     for(int i=0; i<tt.length; i++)
+                     for(int i=0; i<emplacementsSansDoublon.length; i++)
                      {
-                    	 OutputData += "-- "+ tt[i] +" \n ";
-                    	 
+                    	 //afiche les emplacements
+                       
+                    	OutputData += "-- <b>"+ emplacementsSansDoublon[i] +"</b> <br>";
+                    	
                     	//boucle qui liste les modules
-                    	 for(int j=0; j < jsonMainNode.length(); j++) 
+                    	 for(int j=0; j < tableauJson.length(); j++) 
                          {
-                             /****** Get Object for each JSON node.***********/
-                             JSONObject c = jsonMainNode.getJSONObject(j);
+                             /****** On fait un object module pour chaque noeud du json.***********/
+                             JSONObject module = tableauJson.getJSONObject(j);
                               
-                             /******* Fetch node values **********/
-                             String sonde_type			= c.optString("nom_sensor");
-                             String sonde_valeur 		= c.optString("sonde_valeur");
-                             String module_emplacement  = c.optString("module_emplacement");
+                             /******* declarations et remplissages les valeurs **********/
+                             String sonde_type			= module.optString("nom_sensor");
+                             String sonde_valeur 		= module.optString("sonde_valeur");
+                             String module_emplacement  = module.optString("module_emplacement");
+                             String nom_lien            = module.optString("nom_lien");
                              
-                            //si emplacement est l'emplacement du modules 
-                             //OutputData += Normalizer.normalize((String)tt[i],Form.NFC) + " ";
-                             //OutputData += Normalizer.normalize((String)module_emplacement,Form.NFC) + "\n";
-                            if(Normalizer.normalize((String)tt[i],Form.NFC).compareTo(Normalizer.normalize((String)module_emplacement,Form.NFC)) == 0  ){
-                            	
-                             OutputData += "Type de sonde       : "+ sonde_type +" \n "
-                                         + "Emplacement         : "+ module_emplacement +" \n "
-                                         + "Valeur              : "+ sonde_valeur +" \n " 
-                                         +"--------------------------------------------\n";
+                             
+                            //si emplacement est l'emplacement du modules (avec une conparaison)
+                            if(Normalizer.normalize((String)emplacementsSansDoublon[i],Form.NFC).compareTo(Normalizer.normalize((String)module_emplacement,Form.NFC)) == 0  ){
+                            
+                            	if((Normalizer.normalize((String)sonde_type,Form.NFC).compareTo("DHT22") == 0  ) || (Normalizer.normalize((String)sonde_type,Form.NFC).compareTo("DHT11") == 0  ))
+                            	{
+                            		//affiche la valeur des sondes dht11 ou dht22
+                            		
+                            		OutputData += "Valeur              : "+ sonde_valeur +"  ";
+                            		
+                            		//si la sonde est un termo
+                            		if(Normalizer.normalize((String)nom_lien,Form.NFC).compareTo("temperature") == 0 )
+                            		{
+                            			OutputData +="C°<br>";
+                            		}
+                            		//si la sonde est un hydro
+                            		if(Normalizer.normalize((String)nom_lien,Form.NFC).compareTo("humidite") == 0 )
+                            		{
+                            			OutputData +="%<br>";
+                            		}
+                            		
+                                        
+                            	}
                             }
                         }
                     	 
-                    	 OutputData += " \n ";  	 
+                    	 OutputData += "--------------------------------------------<br> ";  	 
                     
                      }
                  /****************** End Parse Response JSON Data *************/     
                      
-                     //Show Parsed Output on screen (activity)
-                     jsonParsed.setText( OutputData );
+                     //affiche le json prasé sur l'ecran de l'activité 
+                     //jsonParsed tv = (TextView)findViewById(R.id.THE_TEXTVIEW_ID);
+                     jsonParsed.setText(Html.fromHtml(OutputData));
+                    // jsonParsed.setText( OutputData );
                      
                       
                  } catch (JSONException e) {
